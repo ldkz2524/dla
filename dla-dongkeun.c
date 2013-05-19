@@ -1,8 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
-float global_radius = 1;
+float global_radius = 10;
 float global_grid_size = 100.00;
 int global_n_of_particles = 10;
 int dimensions = 2;
@@ -11,32 +12,88 @@ int global_seed = 10;
 int n_of_particles, seed;
 float grid_size, radius;
 
-void initialize_particle(float*  particles, int i)
+
+
+float distance (float x1, float x2, float y1, float y2)
 {
-	float random_position = -grid_size + grid_size*(2*rand()/(float)RAND_MAX);
+	x1 = x1-x2;
+	x1 = x1*x1;
+	y1 = y1-y2;
+	y1 = y1*y1;
+	float result = sqrt(x1+y1);
+	return result;
+}
+
+
+void initialize_particle(float* particles, int i)
+{
+	float random_position = grid_size*(2*rand()/(float)RAND_MAX);
 	switch( rand() % 4)
 	{
 		case 0:
-			particles[i] = -grid_size;
-			particles[i+1] =  random_position;
+			particles[dimensions*i] = -grid_size;
+			particles[dimensions*i+1] =  random_position;
 			break;
 		case 1:
-			particles[i] = grid_size;
-			particles[i+1] = random_position;
+			particles[dimensions*i] = grid_size;
+			particles[dimensions*i+1] = random_position;
 			break;
 		case 2:
-			particles[i] = random_position;
-			particles[i+1] = -grid_size;
+			particles[dimensions*i] = random_position;
+			particles[dimensions*i+1] = -grid_size;
 			break;
 		case 3:
-			particles[i] = random_position;
-			particles[i+1] = grid_size;
+			particles[dimensions*i] = random_position;
+			particles[dimensions*i+1] = grid_size;
 			break;	
 	}
 }
 
+void move_particle(float* particles, int i)
+{
+	float velocity = radius*rand()/(float)RAND_MAX;
+	//printf("velocity: %f\n",velocity);
+	float x_value = velocity*rand()/(float)RAND_MAX;
+	float y_squared = velocity*velocity-x_value*x_value;
+	float y_value = sqrt(y_squared);
+	if ((rand()%2) < 1)
+		particles[dimensions*i] = particles[dimensions*i]-x_value;
+	else
+		particles[dimensions*i] = particles[dimensions*i]+x_value;
+	if ((rand()%2) < 1)
+		particles[dimensions*i+1] = particles[dimensions*i+1]-y_value;
+	else
+		particles[dimensions*i+1] = particles[dimensions*i+1]+y_value;
+	if (particles[dimensions*i] > grid_size || particles[dimensions*i] < -grid_size || particles[dimensions*i+1] > grid_size || particles[dimensions*i+1] < -grid_size)
+		initialize_particle(particles, i);
+}
+
+int check_for_collision(float* particles, int i)
+{
+	int ctr;
+	for (ctr = 0; ctr < i; ctr++)
+	{
+		
+		float distance_to_particle = distance(particles[dimensions*i],particles[dimensions*ctr],particles[dimensions*i+1],particles[dimensions*ctr+1]);
+		//printf("%i Distance to Particle #%d: %f\n",i,ctr,distance_to_particle);
+		if (distance_to_particle< (2*radius))
+		{
+			return 1;
+		}		
+	}
+	return 0;
+}
+
 int main(int argc, char* argv[])
 {
+	if (argc < 2)
+	{
+		printf("./dla seed\n");
+		return 0;
+	}
+	int total_step =0;
+	int particle_index;
+
 	seed = atoi(argv[1]);
 	n_of_particles = global_n_of_particles;
 	//int n_of_particles = atoi(argv[2]);
@@ -47,12 +104,29 @@ int main(int argc, char* argv[])
 	srand(seed);
 	float* particles = (float*) malloc (dimensions * n_of_particles * sizeof(float));
 
-	int particle_index;
-	for (particle_index = 0; particle_index < n_of_particles; particle_index++)
+//Base particle set up
+	particles[0] = 0.00;
+	particles[1] = 0.00;
+
+	for (particle_index = 1; particle_index < n_of_particles; particle_index++)
 	{
 		initialize_particle(particles, particle_index);
-		printf("%f %f\n",particles[particle_index], particles[particle_index+1]);
+		//printf("initial location: %f %f\n",particles[particle_index*dimensions], particles[dimensions*particle_index+1]);
+		int collision = 0;
+		int step_ctr=0;
+		while (!collision)
+		{
+			move_particle(particles, particle_index);
+			//printf("After movement: %f %f\n",particles[dimensions*particle_index], particles[dimensions*particle_index+1]);
+			collision = check_for_collision(particles, particle_index);
+			step_ctr++;
+		}
+		printf("%f##%f\n",particles[particle_index*dimensions],particles[particle_index*dimensions+1]);
+		total_step += step_ctr;
+		//printf("NUmber of Steps Taken: %i\n-------------------\n",step_ctr);
 	}
+	free(particles);
+	printf("TOTAL NUMBER OF STEPS: %i\n",total_step);
 
 	return 0;
 }
