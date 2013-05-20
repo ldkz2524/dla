@@ -2,8 +2,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <sys/time.h>
 
-float global_radius = 10;
+float global_radius = 5;
 float global_grid_size = 100.00;
 int global_n_of_particles = 10;
 int dimensions = 2;
@@ -12,7 +13,7 @@ int global_seed = 10;
 int n_of_particles, seed;
 float grid_size, radius;
 
-
+void dtimer(double *time, struct timeval *itime, int icntrl);
 
 float distance (float x1, float x2, float y1, float y2)
 {
@@ -86,27 +87,36 @@ int check_for_collision(float* particles, int i)
 
 int main(int argc, char* argv[])
 {
-	if (argc < 2)
+	if (argc < 3)
 	{
-		printf("./dla seed\n");
+		printf("./dla seed number_of_particles\n");
 		return 0;
 	}
-	int total_step =0;
-	int particle_index;
 
 	seed = atoi(argv[1]);
-	n_of_particles = global_n_of_particles;
-	//int n_of_particles = atoi(argv[2]);
+
+	//n_of_particles = global_n_of_particles;
+	n_of_particles = atoi(argv[2]);
 	grid_size = global_grid_size;
 	//int grid_size = atoi(argv[3]);
 	radius = global_radius;
 	//int radius = atoi(argv[4]);
 	srand(seed);
+
+
+	float time;
+	struct timeval itime;
+	double dtime;
+	
+	dtimer(&dtime,&itime,-1);
+
 	float* particles = (float*) malloc (dimensions * n_of_particles * sizeof(float));
 
 //Base particle set up
 	particles[0] = 0.00;
 	particles[1] = 0.00;
+	int total_step =0;
+	int particle_index;
 
 	for (particle_index = 1; particle_index < n_of_particles; particle_index++)
 	{
@@ -121,12 +131,15 @@ int main(int argc, char* argv[])
 			collision = check_for_collision(particles, particle_index);
 			step_ctr++;
 		}
-		printf("%f##%f\n",particles[particle_index*dimensions],particles[particle_index*dimensions+1]);
+		//printf("%f##%f\n",particles[particle_index*dimensions],particles[particle_index*dimensions+1]);
 		total_step += step_ctr;
 		//printf("NUmber of Steps Taken: %i\n-------------------\n",step_ctr);
 	}
+
+	dtimer(&dtime,&itime,1);
+	time = (float) dtime;
 	free(particles);
-	printf("TOTAL NUMBER OF STEPS: %i\n",total_step);
+	printf("TOTAL NUMBER OF STEPS: %i : %f\n",total_step,time);
 
 	return 0;
 }
